@@ -4,6 +4,7 @@ using Transaction.model;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.Data;
 
 namespace Transaction
 {
@@ -13,21 +14,33 @@ namespace Transaction
         {
             using (OrderContext db = new OrderContext())
             {
-                Order order = db.Orders.Find(orderId);
-                if (order == null)
+                using (var transaction = db.Database.BeginTransaction(IsolationLevel.RepeatableRead))
                 {
-                    return;
+                    try
+                    {
+                        
+                        Order order = db.Orders.Find(orderId);
+                        if (order == null)
+                        {
+                            return;
+                        }
+                        orderItem.Order = order;
+                        db.OrderItems.Add(orderItem);
+                        Thread.Sleep(5000);
+                        Console.WriteLine("OrderAmountOld: " + order.Amount);
+                        order.Amount += orderItem.Amount;
+                        Console.WriteLine("OrderAmountNew: " + order.Amount);
+                        db.SaveChanges();
+                        transaction.Commit();                       
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Exception {0}", ex);
+                    }
                 }
-                Thread.Sleep(5000);
-                Console.WriteLine("OrderAmountOld: " + order.Amount);
-                order.Amount += orderItem.Amount;
-                Console.WriteLine("OrderAmountNew: " + order.Amount);
-                orderItem.Order = order;
-                db.OrderItems.Add(orderItem);
-                db.SaveChanges();
             }
-            
         }
+
         static void Main(string[] args)
         {
             using (OrderContext db = new OrderContext())
@@ -47,13 +60,6 @@ namespace Transaction
 
                 task1.Wait();
                 task2.Wait();
-                //addOrderItem(db, oi1, 18);
-                //addOrderItem(db, oi2, 18);
-                //db.Orders.Add(new Order ());
-
-                Console.WriteLine("Объекты успешно сохранены");
-                //db.OrderItems.RemoveRange(db.OrderItems);
-                //db.Orders.RemoveRange(db.Orders);
 
                 db.SaveChanges();
             }
