@@ -9,22 +9,26 @@ namespace Transaction
 {
     class Program
     {
+        static Object addOrderObj = new Object();
         static void addOrderItem(OrderItem orderItem, int orderId)
         {
             using (OrderContext db = new OrderContext())
             {
-                Order order = db.Orders.Find(orderId);
-                if (order == null)
+                lock (addOrderObj)
                 {
-                    return;
+                    Order order = db.Orders.Find(orderId);
+                    if (order == null)
+                    {
+                        return;
+                    }
+                    Thread.Sleep(5000);
+                    Console.WriteLine("OrderAmountOld: " + order.Amount);
+                    order.Amount += orderItem.Amount;
+                    Console.WriteLine("OrderAmountNew: " + order.Amount);
+                    orderItem.Order = order;
+                    db.OrderItems.Add(orderItem);
+                    db.SaveChanges();
                 }
-                Thread.Sleep(5000);
-                Console.WriteLine("OrderAmountOld: " + order.Amount);
-                order.Amount += orderItem.Amount;
-                Console.WriteLine("OrderAmountNew: " + order.Amount);
-                orderItem.Order = order;
-                db.OrderItems.Add(orderItem);
-                db.SaveChanges();
             }
             
         }
