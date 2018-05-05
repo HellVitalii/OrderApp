@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Transaction.model;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace Transaction
 {
@@ -15,12 +16,12 @@ namespace Transaction
                 Order order = db.Orders.Find(orderId);
                 if (order == null)
                 {
-                    order = new Order { };
-                    db.Orders.Add(order);
-                    db.SaveChanges();
+                    return;
                 }
                 Thread.Sleep(5000);
+                Console.WriteLine("OrderAmountOld: " + order.Amount);
                 order.Amount += orderItem.Amount;
+                Console.WriteLine("OrderAmountNew: " + order.Amount);
                 orderItem.Order = order;
                 db.OrderItems.Add(orderItem);
                 db.SaveChanges();
@@ -31,14 +32,16 @@ namespace Transaction
         {
             using (OrderContext db = new OrderContext())
             {
+                Order order = new Order();
+                db.Orders.Add(order);
+                db.SaveChanges();
+                Console.WriteLine(order.Id);
+
                 OrderItem oi1 = new OrderItem { Title = "orange", Count = 11, Amount = 7 };
                 OrderItem oi2 = new OrderItem { Title = "apple", Count = 12, Amount = 12 };
 
-                //db.OrderItems.AddRange(new List<OrderItem> { oi1, oi2 });
-                //db.SaveChanges();
-                //Order order = db.Orders.Find(4);
-                Task task1 = new Task(() => addOrderItem(oi1, 21));
-                Task task2 = new Task(() => addOrderItem(oi2, 21));
+                Task task1 = new Task(() => addOrderItem(oi1, order.Id));
+                Task task2 = new Task(() => addOrderItem(oi2, order.Id));
                 task1.Start();
                 task2.Start();
 
